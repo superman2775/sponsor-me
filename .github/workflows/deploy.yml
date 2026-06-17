@@ -27,8 +27,24 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      # GitHub Pages is currently serving from the `main` branch root, so we
+      # push the built `dist/` contents back to `main`. `clean: false` keeps
+      # the source tree (src/, vite.config.js, package.json, README, etc.)
+      # intact alongside the built bundle. The root index.html gets
+      # overwritten by the Vite-produced one whose <script> tag points at
+      # /assets/*.js instead of /src/main.jsx, fixing the MIME-type error.
+      # `public/CNAME` and `public/.nojekyll` ride along inside dist/.
+      # NOTE: `single-commit: true` is intentionally NOT used — it would
+      # collapse `main` to a single commit holding only the dist/ tree,
+      # wiping src/, vite.config.js, package.json, etc. from the next CI
+      # checkout and breaking subsequent builds.
+      - name: Deploy built site to main
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
+          folder: dist
+          clean: false
+          single-commit: false
+          git_config_name: github-actions[bot]
+          git_config_email: github-actions[bot]@users.noreply.github.com
